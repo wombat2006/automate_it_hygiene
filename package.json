@@ -1,0 +1,58 @@
+{
+  "name": "code-expert",
+  "version": "1.0.0",
+  "description": "AI-powered coding expert using Wall-Bounce multi-LLM analysis for code review, refactoring, debugging, and optimization",
+  "main": "dist/index.js",
+  "bin": {
+    "code-expert": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "start": "node dist/cli.js",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "type-check": "tsc --noEmit",
+    "validate": "npm run format:check && npm run lint && npm run type-check"
+  },
+  "keywords": [
+    "code-review",
+    "refactoring",
+    "debugging",
+    "optimization",
+    "wall-bounce",
+    "llm",
+    "ai",
+    "coding-expert"
+  ],
+  "author": "TechSapo",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.5",
+    "diff": "^5.1.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/inquirer": "^8.2.5",
+    "@types/diff": "^5.0.8",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
