@@ -1,24 +1,24 @@
-# ESET PROTECT On-Prem 11.1 Manager
+# ESET PROTECT On-Prem 11.1 Manager なのだ
 
-ESET PROTECT On-Prem 11.1のJSON-RPC APIを使用して、クライアントPCのモニタリングとリモート操作を行うPythonツール。
+ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCのモニタリングとリモート操作を行うPythonツールなのだ。
 
 ## 機能
 
-- **情報取得**: CSVファイルに記載されたPC名のESET状態を一括取得
+- **情報取得**: CSVファイルに記載されたPC名のESET状態を一括取得するのだ
   - ESETとの疎通状態
   - Anti-Virusのバージョン
   - 定義ファイルの更新日
   - Windowsのバージョン
   - PCの最終起動日
 
-- **タスク実行**: リモートでのタスク発行
+- **タスク実行**: リモートでのタスク発行ができるのだ
   - `SoftwareUninstallation` - AntiVirusのサイレントアンインストール
   - `SoftwareInstallation` - AntiVirusのサイレントインストール
   - `RunCommand` - 任意のコマンド実行
   - `Update` - ウイルス定義ファイルの更新
   - `OnDemandScan` - オンデマンドスキャン
 
-- **dry-run機能**: 実際のAPI呼び出しを行わずに動作確認
+- **dry-run機能**: 実際のAPI呼び出しを行わずに動作確認できるのだ。これは便利なのだ。
 
 ## 動作環境
 
@@ -31,6 +31,8 @@ ESET PROTECT On-Prem 11.1のJSON-RPC APIを使用して、クライアントPC�
 ```bash
 pip install -r eset_requirements.txt
 ```
+
+簡単なのだ。
 
 ## 設定
 
@@ -109,7 +111,7 @@ DESKTOP-ABC002
 LAPTOP-XYZ001
 ```
 
-対応するカラム名: `name`, `computer`, `hostname`, `pc` （大文字小文字不問）
+対応するカラム名: `name`, `computer`, `hostname`, `pc` （大文字小文字不問）なのだ。柔軟に対応しているのだ。
 
 ## 出力CSVフォーマット
 
@@ -143,38 +145,46 @@ LAPTOP-XYZ001
 | 11 | SoftwareUninstallation | ソフトウェアアンインストール |
 | 12 | SystemUpdate | OSアップデート |
 
+なかなか種類が多いのだ。
+
 ## トラブルシューティング
 
 ### SSL証明書エラー
 
-自己署名証明書を使用している場合:
+自己署名証明書を使用している場合はこうするのだ：
 ```bash
 export ESET_VERIFY_SSL="false"
 ```
 
+ただし、本番環境ではちゃんとした証明書を使うべきなのだ。セキュリティは大事なのだ。
+
 ### 認証エラー
 
-1. ユーザー名/パスワードを確認
-2. ESET PROTECT管理者権限があることを確認
-3. ポート2223が開放されていることを確認
+1. ユーザー名/パスワードを確認するのだ
+2. ESET PROTECT管理者権限があることを確認するのだ
+3. ポート2223が開放されていることを確認するのだ
 
 ### コンピュータが見つからない
 
-1. ESET PROTECTコンソールで該当PCが登録されているか確認
-2. PC名の大文字小文字を確認（内部では大文字小文字を無視してマッチング）
-3. `--verbose`オプションで詳細ログを確認
+1. ESET PROTECTコンソールで該当PCが登録されているか確認するのだ
+2. PC名の大文字小文字を確認するのだ（内部では大文字小文字を無視してマッチングしているのだ）
+3. `--verbose`オプションで詳細ログを確認するのだ
 
 ### APIレスポンスのフィールド名が異なる
 
-環境によりAPIレスポンスのフィールド名が異なる場合があります。
-`--verbose`オプションでレスポンスを確認し、必要に応じて
-`ComputerInfoExtractor.extract_info()`メソッドを調整してください。
+環境によりAPIレスポンスのフィールド名が異なる場合があるのだ。
+`--verbose`オプションでレスポンスを確認して、必要に応じて
+`ComputerInfoExtractor.extract_info()`メソッドを調整するのだ。
+
+まあ、そういうこともあるのだ。
 
 ## セキュリティに関する注意
 
-- パスワードはコマンドライン引数ではなく、環境変数または設定ファイルで指定することを推奨
-- 設定ファイルのパーミッションは`600`（所有者のみ読み書き可能）に設定
-- ログ出力時にパスワードは自動的にマスクされます
+- パスワードはコマンドライン引数ではなく、環境変数または設定ファイルで指定することを推奨するのだ
+- 設定ファイルのパーミッションは`600`（所有者のみ読み書き可能）に設定するのだ
+- ログ出力時にパスワードは自動的にマスクされるのだ
+
+セキュリティは妥協してはいけないのだ。
 
 ## ライセンス
 
@@ -185,3 +195,5 @@ MIT License
 - [ESET PROTECT On-Prem API Documentation](https://help.eset.com/protect_install/11.1/api/)
 - [ESET PROTECT On-Prem 11.1 API Examples](https://help.eset.com/protect_install/11.1/api_examples/)
 - [ClientTaskConfiguration_Type Enum](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
+
+何かわからないことがあったら、これらのドキュメントを見るといいのだ。

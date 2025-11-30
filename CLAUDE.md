@@ -1,217 +1,69 @@
 # CLAUDE.md
 
-AI-powered Coding Expert using Wall-Bounce multi-LLM analysis.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🎯 Project Overview
+## Project Overview
 
-**Code Expert** provides AI-assisted code review, refactoring, debugging, optimization, and more through Wall-Bounce multi-LLM analysis.
+Code Expert is a CLI tool for AI-assisted code review and refactoring using the Wall-Bounce multi-LLM analysis API. It sends code to TechSapo's Wall-Bounce service which performs 3-round analysis across multiple LLMs (GPT-5 Codex, Claude Sonnet 4, Gemini 2.5 Pro).
 
-**Inherited from**: [Scripter](https://github.com/wombat2006/scripter) - Proven Wall-Bounce integration
-
-## 🏗️ Architecture
-
-### Core Components
-
-- `src/core/wall-bounce-client.ts`: Wall-Bounce API integration (inherited from Scripter)
-- `src/core/types.ts`: TypeScript type definitions
-- `src/features/`: Expert features (review, refactor, debug, optimize, explain, test)
-- `src/cli.ts`: Command-line interface
-
-### Features
-
-| Feature | Description | Focus |
-|---------|-------------|-------|
-| **Review** | Code quality analysis | Security, performance, bugs, best practices |
-| **Refactor** | Code improvement | Readability, maintainability, SOLID, DRY |
-| **Debug** | Bug finding & fixing | Logic errors, edge cases, null handling |
-| **Optimize** | Performance tuning | Algorithm, memory, I/O optimization |
-| **Explain** | Code understanding | Documentation, learning, knowledge transfer |
-| **Test** | Test generation | Unit tests, integration tests, coverage |
-
-## 🚀 Development
-
-### Setup
+## Commands
 
 ```bash
-npm install
-npm run build
-npm run dev
+# Development
+npm install          # Install dependencies
+npm run dev          # Run CLI in development (ts-node)
+npm run build        # Compile TypeScript to dist/
+
+# Testing & Quality
+npm test             # Run Jest tests
+npm run lint         # ESLint check
+npm run lint:fix     # ESLint auto-fix
+npm run type-check   # TypeScript type checking only
+npm run validate     # Run all checks (format, lint, type-check)
+
+# CLI Usage (after build)
+npm start            # or: node dist/cli.js
 ```
 
-### Commands
+## Architecture
 
-```bash
-# Review code
-npm run dev -- review file.ts
-
-# Refactor code
-npm run dev -- refactor file.ts --goals readability,performance
-
-# Interactive mode
-npm run dev -- interactive
-
-# Configure API
-npm run dev -- config
+```
+src/
+├── cli.ts                        # Commander.js CLI entry point
+├── core/
+│   ├── types.ts                  # All TypeScript interfaces
+│   └── wall-bounce-client.ts     # HTTP client for Wall-Bounce API
+└── features/
+    ├── code-reviewer.ts          # Review feature (builds prompts, parses responses)
+    └── code-refactorer.ts        # Refactor feature (builds prompts, parses responses)
 ```
 
-### Testing
+### Key Patterns
 
-```bash
-npm test
-npm run lint
-npm run type-check
-npm run validate
-```
-
-## 🔧 Configuration
+- **Feature modules** (`src/features/`) follow a consistent pattern: inject `WallBounceClient`, build a prompt with `buildXxxPrompt()`, send to API, parse response with `parseXxxResponse()`
+- **Response parsing** extracts structured data (issues, suggestions) from markdown-formatted LLM responses using regex
+- **CLI** uses Commander.js for commands (`review`, `refactor`, `interactive`, `config`)
 
 ### API Configuration
 
-Create `~/.code-expert-config.json`:
-
+User config stored at `~/.code-expert-config.json`:
 ```json
 {
   "apiEndpoint": "https://techsapo.com/api/v1/wall-bounce",
-  "auth": {
-    "username": "your-username",
-    "password": "your-password"
-  }
+  "auth": { "username": "...", "password": "..." }
 }
 ```
 
-Or use `code-expert config` command.
+## Type System
 
-## 💡 Usage Examples
+All request/response types defined in `src/core/types.ts`:
+- `ExpertRequest` = union of `ReviewRequest | RefactorRequest | DebugRequest | OptimizeRequest | ExplainRequest | TestRequest`
+- `ExpertResponse` = unified response with optional `issues[]`, `suggestions[]`, `improvedCode`
+- `WallBounceRequest/Response` = API communication types
 
-### Example 1: Security Review
+## Incomplete Features (TODO)
 
-```bash
-code-expert review auth.ts --focus security --severity high -o security-report.md
-```
-
-### Example 2: Performance Refactoring
-
-```bash
-code-expert refactor slow-function.ts --goals performance -o optimized.ts
-```
-
-### Example 3: Test Generation
-
-```bash
-code-expert test calculator.ts --framework jest --coverage 80 -o calculator.test.ts
-```
-
-## 📚 Documentation
-
-- `README.md`: User guide and quick start
-- `docs/API.md`: API documentation
-- `docs/EXAMPLES.md`: Usage examples
-- `docs/CONTRIBUTING.md`: Contribution guidelines
-
-## 🤖 Wall-Bounce Integration
-
-Uses 3-round multi-LLM analysis:
-
-1. **Round 1**: Initial analysis (GPT-5 Codex / Qwen3 Coder)
-2. **Round 2**: Validation & improvement (Claude Sonnet 4)
-3. **Round 3**: Final synthesis (Gemini 2.5 Pro)
-
-→ High-quality, consensus-based code analysis
-
-## 🔒 Security
-
-- API credentials stored securely in `~/.code-expert-config.json`
-- HTTPS communication with Wall-Bounce API
-- BASIC authentication
-- No code sent to third-party services (only to TechSapo Wall-Bounce)
-
-## 📊 Supported Languages
-
-- TypeScript ✅
-- JavaScript ✅
-- Python ✅
-- Java ✅
-- Go ✅
-- Rust ✅
-- C++ ✅
-- C# ✅
-
-## 🛠️ Technology Stack
-
-- **TypeScript**: 5.3.0
-- **Node.js**: 18.0.0+
-- **Wall-Bounce API**: TechSapo platform
-- **CLI**: Commander.js
-- **UI**: Chalk, Ora, Inquirer
-- **Testing**: Jest
-
-## 📝 Project Structure
-
-```
-code-expert/
-├── src/
-│   ├── core/
-│   │   ├── types.ts                 # Type definitions
-│   │   └── wall-bounce-client.ts   # Wall-Bounce client (inherited)
-│   ├── features/
-│   │   ├── code-reviewer.ts        # Code review
-│   │   ├── code-refactorer.ts      # Refactoring
-│   │   ├── code-debugger.ts        # Debugging (TODO)
-│   │   ├── code-optimizer.ts       # Optimization (TODO)
-│   │   ├── code-explainer.ts       # Explanation (TODO)
-│   │   └── test-generator.ts       # Test generation (TODO)
-│   ├── utils/
-│   │   ├── code-parser.ts          # Code parsing (TODO)
-│   │   └── diff-formatter.ts       # Diff formatting (TODO)
-│   └── cli.ts                      # CLI interface
-├── docs/
-│   ├── API.md                      # API docs (TODO)
-│   ├── EXAMPLES.md                 # Examples (TODO)
-│   └── CONTRIBUTING.md             # Contributing (TODO)
-├── examples/
-│   └── sample-code/                # Example files (TODO)
-├── tests/
-│   └── *.test.ts                   # Test files (TODO)
-├── package.json
-├── tsconfig.json
-├── .gitignore
-├── README.md
-└── CLAUDE.md                       # This file
-```
-
-## 🎯 Roadmap
-
-### Phase 1: Core Features (Current)
-- [x] Wall-Bounce client integration
-- [x] Code reviewer
-- [x] Code refactorer
-- [x] CLI interface
-- [ ] Debugger
-- [ ] Optimizer
-- [ ] Explainer
-- [ ] Test generator
-
-### Phase 2: Enhanced Features
-- [ ] VSCode extension
-- [ ] Batch processing
-- [ ] Project-wide analysis
-- [ ] Custom rules/plugins
-- [ ] CI/CD integration
-
-### Phase 3: Advanced Features
-- [ ] Real-time collaboration
-- [ ] Team analytics
-- [ ] Learning mode
-- [ ] Custom LLM models
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
-
-## 📄 License
-
-MIT License
-
----
-
-**Powered by TechSapo Wall-Bounce Technology** 🎯
+Features defined in types but not yet implemented:
+- `code-debugger.ts`, `code-optimizer.ts`, `code-explainer.ts`, `test-generator.ts`
+- `utils/code-parser.ts`, `utils/diff-formatter.ts`
+- Interactive mode actions only display placeholder message
