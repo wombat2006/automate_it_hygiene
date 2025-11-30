@@ -1,252 +1,366 @@
-# ESET Manager なのだ
+# ESET Manager 詳細ドキュメント なのだ
 
-ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCのモニタリングとリモート操作を行うPythonツールなのだ。CSVファイルでPC名を指定して一括操作できるのだ。
+> **Note**: メインのドキュメントは [ESET_MANAGER_README.md](../ESET_MANAGER_README.md) を参照するのだ。
+> このファイルは補足的な技術情報を提供するのだ。
 
-## 概要
+## 内部アーキテクチャ
 
-ESET Managerは社内のESETアンチウイルス展開を管理するためのシンプルなツールなのだ。CSVファイルに記載されたPC名に対して、ヘルスモニタリングやリモートタスク実行ができるのだ。
+### クラス構成
 
-### 主な機能
-
-- **情報取得**: CSVファイルに記載されたPC名のESET状態を一括取得するのだ
-  - ESETとの疎通状態
-  - Anti-Virusのバージョン
-  - 定義ファイルの更新日
-  - Windowsのバージョン
-  - PCの最終起動日
-- **リモート管理**: 問題のあるデバイスでESETをリモートでアンインストール・再インストールできるのだ
-- **タスク実行**: ウイルス定義更新、オンデマンドスキャン、任意のコマンド実行ができるのだ
-- **dry-run機能**: 実際のAPI呼び出しを行わずに動作確認できるのだ
-
-## 動作環境
-
-- Python 3.7以上
-- Linux / Windows 両対応
-- ESET PROTECT On-Prem 11.1
-
-## インストール
-
-```bash
-pip install -r eset_requirements.txt
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     eset_manager.py                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ ESETAPIClient                                        │    │
+│  │ ├─ __init__(config, dry_run)                        │    │
+│  │ ├─ login() → session_token                          │    │
+│  │ ├─ logout()                                         │    │
+│  │ ├─ get_computers() → List[Dict]                     │    │
+│  │ ├─ get_computer_details(uuid) → Dict                │    │
+│  │ └─ create_client_task(uuids, task_type, ...) → str  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ ComputerInfoExtractor                               │    │
+│  │ └─ extract_info(raw_data) → Dict                    │    │
+│  │    ├─ av_version                                    │    │
+│  │    ├─ definition_date                               │    │
+│  │    ├─ windows_version                               │    │
+│  │    ├─ last_boot                                     │    │
+│  │    └─ connected                                     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ ESETManager                                         │    │
+│  │ ├─ __init__(config, dry_run)                        │    │
+│  │ ├─ get_info(computer_names) → List[Dict]            │    │
+│  │ └─ execute_task(computer_names, task_type, ...) → str│   │
+│  └─────────────────────────────────────────────────────┘    │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ CLI (argparse)                                      │    │
+│  │ ├─ info subcommand                                  │    │
+│  │ └─ task subcommand                                  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-簡単なのだ。
+### 処理フロー
 
-## 設定
+#### 情報取得フロー
 
-### 方法1: 環境変数（推奨）
-
-```bash
-export ESET_HOST="eset-server.example.com"
-export ESET_PORT="2223"
-export ESET_USERNAME="Administrator"
-export ESET_PASSWORD="your_password"
-export ESET_VERIFY_SSL="false"
-export ESET_USE_HTTP="true"  # HTTPを使用する場合
+```
+1. CSVファイル読み込み
+   │
+   ▼
+2. ESETAPIClient.login()
+   │  JSON-RPC: RpcAuthLoginRequest
+   │
+   ▼
+3. ESETAPIClient.get_computers()
+   │  JSON-RPC: RpcGroupsGetGroupsStructure
+   │  → 全PCの基本情報を取得
+   │
+   ▼
+4. CSVのPC名とマッチング
+   │  大文字小文字を無視して照合
+   │
+   ▼
+5. 各PCについて詳細情報を取得
+   │  ESETAPIClient.get_computer_details(uuid)
+   │
+   ▼
+6. ComputerInfoExtractor.extract_info()
+   │  APIレスポンスから必要な情報を抽出
+   │
+   ▼
+7. 結果をCSVに出力
+   │
+   ▼
+8. ESETAPIClient.logout()
 ```
 
-### 方法2: 設定ファイル
+#### タスク実行フロー
 
-Linux: `~/.config/eset_manager/config.json`
-Windows: `%APPDATA%\eset_manager\config.json`
+```
+1. CSVファイル読み込み
+   │
+   ▼
+2. ESETAPIClient.login()
+   │
+   ▼
+3. PC名からUUIDを解決
+   │  get_computers() でマッチング
+   │
+   ▼
+4. ESETAPIClient.create_client_task()
+   │  JSON-RPC: RpcTasksTriggerClientTrigger
+   │  ├─ task_type: タスクタイプ番号
+   │  ├─ target_uuids: 対象PCのUUID配列
+   │  └─ parameters: タスク固有のパラメータ
+   │
+   ▼
+5. タスクID返却
+   │
+   ▼
+6. ESETAPIClient.logout()
+```
+
+## JSON-RPC API詳細
+
+### 認証
 
 ```json
+// Request
 {
-    "host": "eset-server.example.com",
-    "port": 2223,
+  "jsonrpc": "2.0",
+  "method": "Era.Common.NetworkMessage.ConsoleApi.SessionManagement.RpcAuthLoginRequest",
+  "params": {
     "username": "Administrator",
-    "password": "your_password",
-    "verify_ssl": false,
-    "use_http": true,
-    "timeout": 30,
-    "retries": 3
+    "password": "secret"
+  },
+  "id": 1
 }
-```
 
-`use_http`を`true`にするとHTTPS代わりにHTTPを使用するのだ。社内ネットワークなど、HTTPで十分な環境では便利なのだ。
-
-## 使い方
-
-### 情報取得
-
-```bash
-# 基本的な使い方
-python3 eset_manager.py info --csv computers.csv --output results.csv
-
-# 詳細ログ付き
-python3 eset_manager.py -v info --csv computers.csv --output results.csv
-
-# dry-runモード（API呼び出しなし）
-python3 eset_manager.py --dry-run info --csv computers.csv --output results.csv
-```
-
-### タスク実行
-
-```bash
-# アンインストール（dry-run）
-python3 eset_manager.py --dry-run task --csv computers.csv --type SoftwareUninstallation
-
-# アンインストール（実行）
-python3 eset_manager.py task --csv computers.csv --type SoftwareUninstallation
-
-# インストール（パッケージパス指定）
-python3 eset_manager.py task --csv computers.csv --type SoftwareInstallation \
-    --package "\\\\server\\share\\eset_installer.msi"
-
-# コマンド実行
-python3 eset_manager.py task --csv computers.csv --type RunCommand \
-    --command "ipconfig /all"
-
-# ウイルス定義更新
-python3 eset_manager.py task --csv computers.csv --type Update
-
-# オンデマンドスキャン
-python3 eset_manager.py task --csv computers.csv --type OnDemandScan
-```
-
-## 入力CSVフォーマット
-
-```csv
-name
-DESKTOP-ABC001
-DESKTOP-ABC002
-LAPTOP-XYZ001
-```
-
-対応するカラム名: `name`, `computer`, `hostname`, `pc` （大文字小文字不問）なのだ。柔軟に対応しているのだ。
-
-## 出力CSVフォーマット
-
-| カラム | 説明 |
-|--------|------|
-| name | コンピュータ名 |
-| uuid | ESET内部UUID |
-| connected | 疎通状態 (True/False) |
-| av_version | Anti-Virusバージョン |
-| av_module_version | モジュールバージョン |
-| definition_date | 定義ファイル更新日 |
-| windows_version | Windowsバージョン |
-| last_boot | 最終起動日時 |
-| last_seen | 最終接続日時 |
-| error | エラーメッセージ（あれば） |
-
-## TaskType一覧（ESET PROTECT On-Prem 11.1）
-
-| 番号 | 名称 | 説明 |
-|------|------|------|
-| 1 | ExportConfiguration | 設定エクスポート |
-| 2 | OnDemandScan | オンデマンドスキャン |
-| 3 | QuarantineManagement | 隔離管理 |
-| 4 | QuarantineUpload | 隔離ファイルアップロード |
-| 5 | Update | ウイルス定義更新 |
-| 6 | UpdateRollback | 更新ロールバック |
-| 7 | SysInspectorScript | SysInspectorスクリプト |
-| 8 | SysInspectorLogRequest | SysInspectorログ要求 |
-| 9 | RunCommand | コマンド実行 |
-| 10 | SoftwareInstallation | ソフトウェアインストール |
-| 11 | SoftwareUninstallation | ソフトウェアアンインストール |
-| 12 | SystemUpdate | OSアップデート |
-
-なかなか種類が多いのだ。
-
-## 典型的なワークフロー
-
-### ワークフロー1: 日次ヘルスモニタリング
-
-```bash
-# 1. CSVファイルを準備（対象PCのリスト）
-cat computers.csv
-# name
-# DESKTOP-ABC001
-# DESKTOP-ABC002
-
-# 2. 情報取得
-python3 eset_manager.py info --csv computers.csv --output results.csv
-
-# 3. 結果を確認
-cat results.csv
-```
-
-### ワークフロー2: 問題のあるPCの修復
-
-```bash
-# 1. 問題のあるPCをCSVファイルに記載
-echo "name" > problem_pcs.csv
-echo "DESKTOP-ABC001" >> problem_pcs.csv
-
-# 2. アンインストール実行
-python3 eset_manager.py task --csv problem_pcs.csv --type SoftwareUninstallation
-
-# 3. 再インストール実行
-python3 eset_manager.py task --csv problem_pcs.csv --type SoftwareInstallation \
-    --package "\\\\server\\share\\eset_installer.msi"
-```
-
-### ワークフロー3: ウイルス定義の一括更新
-
-```bash
-# 全PCの定義ファイルを更新
-python3 eset_manager.py task --csv all_computers.csv --type Update
-```
-
-## トラブルシューティング
-
-### SSL証明書エラー
-
-自己署名証明書を使用している場合はこうするのだ：
-```bash
-export ESET_VERIFY_SSL="false"
-```
-
-### HTTPを使いたい場合
-
-社内ネットワークでHTTPSが不要な場合：
-```bash
-export ESET_USE_HTTP="true"
-```
-
-または設定ファイルで：
-```json
+// Response
 {
-    "use_http": true
+  "jsonrpc": "2.0",
+  "result": {
+    "session": {
+      "token": "abc123...",
+      "userId": 1,
+      "permissions": [...]
+    }
+  },
+  "id": 1
 }
 ```
 
-### 認証エラー
+### コンピュータ一覧取得
 
-1. ユーザー名/パスワードを確認するのだ
-2. ESET PROTECT管理者権限があることを確認するのだ
-3. ポート2223が開放されていることを確認するのだ
+```json
+// Request
+{
+  "jsonrpc": "2.0",
+  "method": "Era.Common.NetworkMessage.ConsoleApi.Groups.RpcGroupsGetGroupsStructure",
+  "params": {
+    "parentGroupUuid": "00000000-0000-0000-0000-000000000000"
+  },
+  "id": 2
+}
 
-### コンピュータが見つからない
+// Response (抜粋)
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "groups": [...],
+    "computers": [
+      {
+        "uuid": "abc123-def456-...",
+        "name": "DESKTOP-ABC001",
+        "connected": true,
+        "lastSeen": "2025-11-30T09:45:00Z",
+        ...
+      }
+    ]
+  },
+  "id": 2
+}
+```
 
-1. ESET PROTECTコンソールで該当PCが登録されているか確認するのだ
-2. PC名の大文字小文字を確認するのだ（内部では大文字小文字を無視してマッチングしているのだ）
-3. `--verbose`オプションで詳細ログを確認するのだ
+### タスク作成
 
-### APIレスポンスのフィールド名が異なる
+```json
+// Request
+{
+  "jsonrpc": "2.0",
+  "method": "Era.Common.NetworkMessage.ConsoleApi.TasksTriggers.RpcTasksTriggerClientTrigger",
+  "params": {
+    "taskConfiguration": {
+      "type": 11,  // SoftwareUninstallation
+      "name": "Uninstall task",
+      "description": "Created by eset_manager.py"
+    },
+    "targets": {
+      "computerUuids": ["abc123-def456-...", "ghi789-jkl012-..."]
+    },
+    "trigger": {
+      "type": "Immediately"
+    }
+  },
+  "id": 3
+}
 
-環境によりAPIレスポンスのフィールド名が異なる場合があるのだ。
-`--verbose`オプションでレスポンスを確認して、必要に応じて
-`ComputerInfoExtractor.extract_info()`メソッドを調整するのだ。
+// Response
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "taskId": "task-uuid-12345"
+  },
+  "id": 3
+}
+```
 
-まあ、そういうこともあるのだ。
+## エラーハンドリング
 
-## セキュリティに関する注意
+### リトライロジック
 
-- パスワードはコマンドライン引数ではなく、環境変数または設定ファイルで指定することを推奨するのだ
-- 設定ファイルのパーミッションは`600`（所有者のみ読み書き可能）に設定するのだ
-- ログ出力時にパスワードは自動的にマスクされるのだ
-- HTTPを使用する場合は、社内ネットワークなど信頼できる環境に限定するのだ
+```python
+retry_strategy = Retry(
+    total=config["retries"],        # デフォルト: 3回
+    backoff_factor=0.5,             # 0.5秒, 1秒, 2秒...
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["POST"],
+)
+```
 
-## ライセンス
+### エラー分類
 
-MIT License
+| HTTPステータス | 意味 | 対応 |
+|---------------|------|------|
+| 401 | 認証失敗 | 認証情報確認、再ログイン |
+| 403 | 権限不足 | ユーザー権限確認 |
+| 404 | リソースなし | PC名/UUID確認 |
+| 429 | レート制限 | 自動リトライ |
+| 500-504 | サーバーエラー | 自動リトライ |
 
-## 参考資料
+### 例外処理
 
-- [ESET PROTECT On-Prem API Documentation](https://help.eset.com/protect_install/11.1/api/)
-- [ESET PROTECT On-Prem 11.1 API Examples](https://help.eset.com/protect_install/11.1/api_examples/)
-- [ClientTaskConfiguration_Type Enum](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
+```python
+class ESETAPIError(Exception):
+    """ESET API関連のエラー"""
+    pass
 
-何かわからないことがあったら、これらのドキュメントを見るといいのだ。
+class AuthenticationError(ESETAPIError):
+    """認証エラー"""
+    pass
+
+class ComputerNotFoundError(ESETAPIError):
+    """コンピュータが見つからない"""
+    pass
+```
+
+## カスタマイズ
+
+### ComputerInfoExtractor のカスタマイズ
+
+環境によってAPIレスポンスの形式が異なる場合、`extract_info()`メソッドをカスタマイズするのだ。
+
+```python
+class ComputerInfoExtractor:
+    @staticmethod
+    def extract_info(raw_data: Dict) -> Dict:
+        """
+        APIレスポンスから必要な情報を抽出する。
+        環境に合わせてフィールド名を調整すること。
+        """
+        # デフォルトの実装
+        return {
+            "av_version": raw_data.get("productVersion", ""),
+            "av_module_version": raw_data.get("moduleVersion", ""),
+            "definition_date": raw_data.get("definitionDate", ""),
+            "windows_version": raw_data.get("osName", ""),
+            "last_boot": raw_data.get("lastBootTime", ""),
+            "last_seen": raw_data.get("lastSeen", ""),
+            "connected": raw_data.get("connected", False),
+        }
+```
+
+フィールド名が異なる場合の対応例：
+
+```python
+# 例: 古いバージョンのAPIでフィールド名が異なる場合
+return {
+    "av_version": raw_data.get("product_version") or raw_data.get("productVersion", ""),
+    "definition_date": raw_data.get("def_date") or raw_data.get("definitionDate", ""),
+    # ...
+}
+```
+
+### 新しいタスクタイプの追加
+
+```python
+# TASK_TYPES に追加
+TASK_TYPES = {
+    # ... 既存のタスク ...
+    "CustomTask": 100,  # カスタムタスクタイプ番号
+}
+
+# タスク実行時のパラメータ
+python3 eset_manager.py task --csv computers.csv --type CustomTask
+```
+
+## パフォーマンスチューニング
+
+### 大量PCの処理
+
+1000台以上のPCを処理する場合の推奨設定：
+
+```bash
+# タイムアウトを延長
+export ESET_TIMEOUT="120"
+
+# リトライを増やす
+export ESET_RETRIES="5"
+```
+
+### バッチサイズ
+
+一度のAPIコールで処理するPCの推奨数：
+- 情報取得: 制限なし（内部で分割処理）
+- タスク実行: 100台程度を推奨
+
+```bash
+# CSVを分割して処理
+split -l 100 computers.csv batch_
+for f in batch_*; do
+    python3 eset_manager.py task --csv "$f" --type Update
+    sleep 5
+done
+```
+
+## テスト
+
+### dry-runモード
+
+```bash
+# すべての操作をdry-runで確認
+python3 eset_manager.py --dry-run info --csv test.csv
+python3 eset_manager.py --dry-run task --csv test.csv --type Update
+```
+
+### 詳細ログ
+
+```bash
+# 詳細ログを有効化
+python3 eset_manager.py -v info --csv test.csv 2>&1 | tee debug.log
+```
+
+### 単体テスト（例）
+
+```python
+import unittest
+from eset_manager import ComputerInfoExtractor
+
+class TestComputerInfoExtractor(unittest.TestCase):
+    def test_extract_info(self):
+        raw = {
+            "productVersion": "10.1.2046.0",
+            "connected": True,
+        }
+        result = ComputerInfoExtractor.extract_info(raw)
+        self.assertEqual(result["av_version"], "10.1.2046.0")
+        self.assertTrue(result["connected"])
+```
+
+## 関連ドキュメント
+
+- [ESET_MANAGER_README.md](../ESET_MANAGER_README.md) - メインドキュメント
+- [ESET PROTECT API Documentation](https://help.eset.com/protect_install/11.1/api/)
+- [ClientTaskConfiguration_Type](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
