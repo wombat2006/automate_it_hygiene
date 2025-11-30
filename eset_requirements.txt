@@ -1,0 +1,4 @@
+# ESET Manager Dependencies
+# Install with: pip install -r eset_requirements.txt
+
+requests>=2.28.0

@@ -1,0 +1,9 @@
+{
+    "host": "eset-server.example.com",
+    "port": 2223,
+    "username": "Administrator",
+    "password": "YOUR_PASSWORD_HERE",
+    "verify_ssl": false,
+    "timeout": 30,
+    "retries": 3
+}
