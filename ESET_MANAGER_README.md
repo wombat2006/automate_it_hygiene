@@ -44,6 +44,7 @@ export ESET_PORT="2223"
 export ESET_USERNAME="Administrator"
 export ESET_PASSWORD="your_password"
 export ESET_VERIFY_SSL="false"
+export ESET_USE_HTTP="true"  # HTTPを使用する場合
 ```
 
 ### 方法2: 設定ファイル
@@ -58,6 +59,7 @@ Windows: `%APPDATA%\eset_manager\config.json`
     "username": "Administrator",
     "password": "your_password",
     "verify_ssl": false,
+    "use_http": true,
     "timeout": 30,
     "retries": 3
 }
@@ -156,7 +158,19 @@ LAPTOP-XYZ001
 export ESET_VERIFY_SSL="false"
 ```
 
-ただし、本番環境ではちゃんとした証明書を使うべきなのだ。セキュリティは大事なのだ。
+### HTTPを使いたい場合
+
+社内ネットワークでHTTPSが不要な場合：
+```bash
+export ESET_USE_HTTP="true"
+```
+
+または設定ファイルで：
+```json
+{
+    "use_http": true
+}
+```
 
 ### 認証エラー
 

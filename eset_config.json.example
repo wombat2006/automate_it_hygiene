@@ -4,6 +4,7 @@
     "username": "Administrator",
     "password": "YOUR_PASSWORD_HERE",
     "verify_ssl": false,
+    "use_http": true,
     "timeout": 30,
     "retries": 3
 }

@@ -84,6 +84,7 @@ def load_config(config_file: Optional[Path] = None) -> Dict[str, Any]:
         "username": os.getenv("ESET_USERNAME", ""),
         "password": os.getenv("ESET_PASSWORD", ""),
         "verify_ssl": os.getenv("ESET_VERIFY_SSL", "true").lower() in ("true", "1", "yes"),
+        "use_http": os.getenv("ESET_USE_HTTP", "false").lower() in ("true", "1", "yes"),
         "timeout": int(os.getenv("ESET_TIMEOUT", str(DEFAULT_TIMEOUT))),
         "retries": int(os.getenv("ESET_RETRIES", str(DEFAULT_RETRIES))),
     }
@@ -100,7 +101,7 @@ def load_config(config_file: Optional[Path] = None) -> Dict[str, Any]:
                 for key in ["host", "username", "password"]:
                     if file_config.get(key):
                         config[key] = file_config[key]
-                for key in ["port", "verify_ssl", "timeout", "retries"]:
+                for key in ["port", "verify_ssl", "use_http", "timeout", "retries"]:
                     if key in file_config:
                         config[key] = file_config[key]
         except Exception as e:
@@ -125,7 +126,9 @@ class ESETAPIClient:
     def __init__(self, config: Dict[str, Any], dry_run: bool = False):
         self.config = config
         self.dry_run = dry_run
-        self.base_url = f"https://{config['host']}:{config['port']}/api"
+        # HTTP or HTTPS based on configuration
+        protocol = "http" if config.get("use_http", False) else "https"
+        self.base_url = f"{protocol}://{config['host']}:{config['port']}/api"
         self.session_token: Optional[str] = None
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -139,8 +142,9 @@ class ESETAPIClient:
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
-        # SSL verification
+        # SSL verification (only relevant for HTTPS)
         if not config["verify_ssl"]:
             self.session.verify = False
             import urllib3

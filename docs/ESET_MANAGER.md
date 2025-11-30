@@ -1,587 +1,252 @@
 # ESET Manager なのだ
 
-エンタープライズ環境向けの本番対応ESET PROTECT API管理ツールなのだ。
+ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCのモニタリングとリモート操作を行うPythonツールなのだ。CSVファイルでPC名を指定して一括操作できるのだ。
 
 ## 概要
 
-ESET Managerは大規模なエンタープライズネットワーク全体でESETアンチウイルス展開を管理するための包括的なソリューションなのだ。自動ヘルスモニタリング、リモートソフトウェア管理、マルチチャンネル通知を提供するのだ。なかなか多機能ではないか。
+ESET Managerは社内のESETアンチウイルス展開を管理するためのシンプルなツールなのだ。CSVファイルに記載されたPC名に対して、ヘルスモニタリングやリモートタスク実行ができるのだ。
 
 ### 主な機能
 
-- **自動ヘルスモニタリング**: 全エンドポイントのESETインストールを継続的に監視するのだ
+- **情報取得**: CSVファイルに記載されたPC名のESET状態を一括取得するのだ
+  - ESETとの疎通状態
+  - Anti-Virusのバージョン
+  - 定義ファイルの更新日
+  - Windowsのバージョン
+  - PCの最終起動日
 - **リモート管理**: 問題のあるデバイスでESETをリモートでアンインストール・再インストールできるのだ
-- **大規模運用**: 並行性制御付きで1000台以上のデバイスを効率的にバッチ処理するのだ
-- **マルチチャンネル通知**: Slack、Microsoft Teams、Emailでアラートを送れるのだ
-- **エンタープライズセキュリティ**: OAuth2認証、TLS 1.2+、改ざん検出付き監査ログに対応しているのだ
-- **レート制限**: APIスロットリングを防ぐ適応型トークンバケットアルゴリズムを使っているのだ
-- **リトライロジック**: 一時的な障害には指数バックオフで対応するのだ
+- **タスク実行**: ウイルス定義更新、オンデマンドスキャン、任意のコマンド実行ができるのだ
+- **dry-run機能**: 実際のAPI呼び出しを行わずに動作確認できるのだ
 
-## アーキテクチャ
+## 動作環境
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        ESET Manager                          │
-├─────────────────────────────────────────────────────────────┤
-│  CLI (eset-cli.ts)                                          │
-│  ├─ ヘルスチェックコマンド                                   │
-│  ├─ タスク管理コマンド                                       │
-│  └─ デバイス管理コマンド                                     │
-├─────────────────────────────────────────────────────────────┤
-│  Manager Layer (eset-manager.ts)                            │
-│  ├─ ヘルスモニタリング                                       │
-│  ├─ アンインストール/再インストール操作                       │
-│  └─ 並行性制御付きバッチ操作                                 │
-├─────────────────────────────────────────────────────────────┤
-│  API Client (eset-client.ts)                                │
-│  ├─ トークンキャッシュ付きOAuth2認証                        │
-│  ├─ レート制限（トークンバケット + 適応型）                  │
-│  ├─ 指数バックオフ付きリトライロジック                       │
-│  ├─ TLS 1.2+強制                                            │
-│  └─ 監査ログ                                                │
-├─────────────────────────────────────────────────────────────┤
-│  Notifier Layer (eset-notifier.ts)                         │
-│  ├─ Slack通知                                               │
-│  ├─ Microsoft Teams通知                                     │
-│  └─ Email通知（HTMLレポート）                               │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-        ┌───────────────────────────────────────┐
-        │   ESET PROTECT API (Cloud/On-Prem)   │
-        └───────────────────────────────────────┘
-```
+- Python 3.7以上
+- Linux / Windows 両対応
+- ESET PROTECT On-Prem 11.1
 
 ## インストール
 
-### 前提条件
-
-- Node.js 18.0.0以上
-- ESET PROTECT Cloudアカウントまたはオンプレミスインストール
-- OAuth2クライアント認証情報（Client IDとSecret）
-
-### 方法1: ローカルインストール
-
 ```bash
-# リポジトリをクローンするのだ
-git clone <repository-url>
-cd code_exp_dev
-
-# 依存関係をインストールするのだ
-npm install
-
-# TypeScriptをビルドするのだ
-npm run build
-
-# CLIをグローバルにリンク（任意）
-npm link
+pip install -r eset_requirements.txt
 ```
 
-### 方法2: Dockerインストール
-
-```bash
-# Dockerイメージをビルドするのだ
-docker build -t eset-manager:latest .
-
-# またはDocker Composeを使うのだ
-docker-compose up -d
-```
+簡単なのだ。
 
 ## 設定
 
-### ステップ1: 設定の初期化
+### 方法1: 環境変数（推奨）
 
 ```bash
-# 設定テンプレートを作成するのだ
-eset-manager config init
-
-# またはカスタムパスを指定するのだ
-eset-manager config init --output /path/to/config.json
+export ESET_HOST="eset-server.example.com"
+export ESET_PORT="2223"
+export ESET_USERNAME="Administrator"
+export ESET_PASSWORD="your_password"
+export ESET_VERIFY_SSL="false"
+export ESET_USE_HTTP="true"  # HTTPを使用する場合
 ```
 
-これで `~/.eset-manager-config.json`（または指定したパス）に設定ファイルが作成されるのだ。
+### 方法2: 設定ファイル
 
-### ステップ2: 設定を編集
-
-認証情報を入力して設定ファイルを編集するのだ：
+Linux: `~/.config/eset_manager/config.json`
+Windows: `%APPDATA%\eset_manager\config.json`
 
 ```json
 {
-  "apiEndpoint": "https://your-tenant.eset.systems/api/v1",
-  "auth": {
-    "clientId": "YOUR_CLIENT_ID",
-    "clientSecret": "YOUR_CLIENT_SECRET",
-    "vaultEnabled": false
-  },
-  "tlsConfig": {
-    "minVersion": "TLS1.2",
-    "verifyCertificate": true
-  },
-  "rateLimiting": {
-    "requestsPerMinute": 60,
-    "burstSize": 10,
-    "adaptiveEnabled": true
-  },
-  "auditLog": {
-    "enabled": true,
-    "logPath": "/var/log/eset-manager/audit.log",
-    "tamperDetection": true
-  },
-  "monitoring": {
-    "healthCheckInterval": 60,
-    "thresholds": {
-      "offlineDeviceHours": 24,
-      "outdatedDefinitionDays": 7,
-      "threatCountCritical": 5,
-      "moduleErrorThreshold": 2
-    },
-    "notifications": {
-      "slack": {
-        "enabled": true,
-        "webhookUrl": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
-        "channel": "#eset-alerts"
-      },
-      "teams": {
-        "enabled": false,
-        "webhookUrl": ""
-      },
-      "email": {
-        "enabled": true,
-        "smtpConfig": {
-          "host": "smtp.gmail.com",
-          "port": 587,
-          "secure": false,
-          "auth": {
-            "user": "alerts@example.com",
-            "pass": "your-app-password"
-          }
-        },
-        "recipients": ["admin@example.com", "security@example.com"]
-      }
-    }
-  }
+    "host": "eset-server.example.com",
+    "port": 2223,
+    "username": "Administrator",
+    "password": "your_password",
+    "verify_ssl": false,
+    "use_http": true,
+    "timeout": 30,
+    "retries": 3
 }
 ```
 
-### ステップ3: ESET PROTECT API認証情報を取得
-
-#### ESET PROTECT Cloudの場合:
-
-1. ESET PROTECT Cloudコンソールにログインするのだ
-2. **More** → **API Applications** に移動するのだ
-3. **Add Application** をクリックするのだ
-4. 必要な権限を付与するのだ：
-   - `devices:read` - デバイス情報を表示
-   - `devices:write` - デバイスを管理
-   - `tasks:read` - タスクを表示
-   - `tasks:write` - タスクを作成・管理
-5. **Client ID** と **Client Secret** をメモするのだ
-
-#### ESET PROTECT On-Premiseの場合:
-
-1. ESET PROTECTコンソールにログインするのだ
-2. **More** → **Server Settings** → **API** に移動するのだ
-3. APIアクセスを有効にするのだ
-4. 適切な権限で新しいAPIユーザーを作成するのだ
-5. OAuth2認証情報を生成するのだ
+`use_http`を`true`にするとHTTPS代わりにHTTPを使用するのだ。社内ネットワークなど、HTTPで十分な環境では便利なのだ。
 
 ## 使い方
 
-### ヘルスモニタリング
-
-#### ヘルスチェックを実行
+### 情報取得
 
 ```bash
-# 基本的なヘルスチェック
-eset-manager health check
+# 基本的な使い方
+python3 eset_manager.py info --csv computers.csv --output results.csv
 
-# 通知付き
-eset-manager health check --notify
+# 詳細ログ付き
+python3 eset_manager.py -v info --csv computers.csv --output results.csv
 
-# 結果をファイルに保存
-eset-manager health check --output health-report.json
-
-# カスタム設定を使用
-eset-manager health check --config /path/to/config.json
+# dry-runモード（API呼び出しなし）
+python3 eset_manager.py --dry-run info --csv computers.csv --output results.csv
 ```
 
-#### 問題のあるデバイスを一覧表示
+### タスク実行
 
 ```bash
-# 全ての問題
-eset-manager health list-issues
+# アンインストール（dry-run）
+python3 eset_manager.py --dry-run task --csv computers.csv --type SoftwareUninstallation
 
-# クリティカルな問題のみ
-eset-manager health list-issues --severity critical
+# アンインストール（実行）
+python3 eset_manager.py task --csv computers.csv --type SoftwareUninstallation
 
-# 警告のみ
-eset-manager health list-issues --severity warning
+# インストール（パッケージパス指定）
+python3 eset_manager.py task --csv computers.csv --type SoftwareInstallation \
+    --package "\\\\server\\share\\eset_installer.msi"
+
+# コマンド実行
+python3 eset_manager.py task --csv computers.csv --type RunCommand \
+    --command "ipconfig /all"
+
+# ウイルス定義更新
+python3 eset_manager.py task --csv computers.csv --type Update
+
+# オンデマンドスキャン
+python3 eset_manager.py task --csv computers.csv --type OnDemandScan
 ```
 
-### リモートアンインストール
+## 入力CSVフォーマット
 
-```bash
-# 特定のデバイスからアンインストール
-eset-manager task uninstall --devices uuid-1 uuid-2 uuid-3
-
-# ファイルからデバイスを指定（1行に1つのUUID）
-eset-manager task uninstall --file devices.txt
-
-# 強制再起動付き
-eset-manager task uninstall --devices uuid-1 --reboot --reboot-delay 10
-
-# 実行前に承認を要求
-eset-manager task uninstall --devices uuid-1 --approval
+```csv
+name
+DESKTOP-ABC001
+DESKTOP-ABC002
+LAPTOP-XYZ001
 ```
 
-### リモート再インストール
+対応するカラム名: `name`, `computer`, `hostname`, `pc` （大文字小文字不問）なのだ。柔軟に対応しているのだ。
 
-```bash
-# 特定のデバイスに再インストール
-eset-manager task reinstall \
-  --devices uuid-1 uuid-2 \
-  --package "https://your-server.com/eset-installer.exe"
+## 出力CSVフォーマット
 
-# 強制再起動付き
-eset-manager task reinstall \
-  --devices uuid-1 \
-  --package "https://your-server.com/eset-installer.exe" \
-  --reboot \
-  --reboot-delay 5
-```
+| カラム | 説明 |
+|--------|------|
+| name | コンピュータ名 |
+| uuid | ESET内部UUID |
+| connected | 疎通状態 (True/False) |
+| av_version | Anti-Virusバージョン |
+| av_module_version | モジュールバージョン |
+| definition_date | 定義ファイル更新日 |
+| windows_version | Windowsバージョン |
+| last_boot | 最終起動日時 |
+| last_seen | 最終接続日時 |
+| error | エラーメッセージ（あれば） |
 
-### アンインストールと再インストールの組み合わせ
+## TaskType一覧（ESET PROTECT On-Prem 11.1）
 
-問題のあるインストールを修正するにはこの方法がおすすめなのだ：
+| 番号 | 名称 | 説明 |
+|------|------|------|
+| 1 | ExportConfiguration | 設定エクスポート |
+| 2 | OnDemandScan | オンデマンドスキャン |
+| 3 | QuarantineManagement | 隔離管理 |
+| 4 | QuarantineUpload | 隔離ファイルアップロード |
+| 5 | Update | ウイルス定義更新 |
+| 6 | UpdateRollback | 更新ロールバック |
+| 7 | SysInspectorScript | SysInspectorスクリプト |
+| 8 | SysInspectorLogRequest | SysInspectorログ要求 |
+| 9 | RunCommand | コマンド実行 |
+| 10 | SoftwareInstallation | ソフトウェアインストール |
+| 11 | SoftwareUninstallation | ソフトウェアアンインストール |
+| 12 | SystemUpdate | OSアップデート |
 
-```bash
-# アンインストールして再インストール（自動的にアンインストール完了を待つ）
-eset-manager task uninstall-reinstall \
-  --devices uuid-1 uuid-2 uuid-3 \
-  --package "https://your-server.com/eset-installer.exe" \
-  --reboot-delay 5
-
-# ファイルから
-eset-manager task uninstall-reinstall \
-  --file problematic-devices.txt \
-  --package "https://your-server.com/eset-installer.exe"
-
-# 承認ワークフロー付き
-eset-manager task uninstall-reinstall \
-  --file devices.txt \
-  --package "https://your-server.com/eset-installer.exe" \
-  --approval
-```
-
-### タスク監視
-
-```bash
-# タスク状態を取得
-eset-manager task status <taskId>
-
-# リアルタイムでタスクを監視（自動更新）
-eset-manager task monitor <taskId>
-```
-
-### デバイス管理
-
-```bash
-# 全デバイスを一覧表示
-eset-manager device list
-
-# ページネーション付き
-eset-manager device list --page 2 --page-size 50
-
-# フィルター付き
-eset-manager device list --filter "os.platform=Windows"
-```
-
-## Docker デプロイメント
-
-### Docker Composeを使う（推奨）
-
-1. 設定ディレクトリを作成するのだ：
-
-```bash
-mkdir -p config
-cp ~/.eset-manager-config.json config/eset-manager-config.json
-```
-
-2. サービスを起動するのだ：
-
-```bash
-# バックグラウンドで起動
-docker-compose up -d
-
-# ログを表示
-docker-compose logs -f
-
-# サービスを停止
-docker-compose down
-```
-
-3. `eset-scheduler`サービスが毎時自動的にヘルスチェックを実行して通知するのだ。
-
-### 手動でDockerを実行
-
-```bash
-# イメージをビルド
-docker build -t eset-manager:latest .
-
-# ヘルスチェックを実行
-docker run --rm \
-  -v $(pwd)/config/eset-manager-config.json:/etc/eset-manager/config.json:ro \
-  eset-manager:latest \
-  node dist/features/eset-cli.js health check --config /etc/eset-manager/config.json --notify
-
-# アンインストール・再インストールを実行
-docker run --rm \
-  -v $(pwd)/config/eset-manager-config.json:/etc/eset-manager/config.json:ro \
-  eset-manager:latest \
-  node dist/features/eset-cli.js task uninstall-reinstall \
-  --config /etc/eset-manager/config.json \
-  --devices uuid-1 uuid-2 \
-  --package "https://your-server.com/eset-installer.exe"
-```
-
-## 自動化とスケジューリング
-
-### Cron Job (Linux)
-
-crontabに追加するのだ：
-
-```bash
-# 毎時ヘルスチェックと通知
-0 * * * * /usr/local/bin/eset-manager health check --notify >> /var/log/eset-manager/health-check.log 2>&1
-
-# 毎日9時にレポート付きヘルスチェック
-0 9 * * * /usr/local/bin/eset-manager health check --notify --output /var/reports/health-$(date +\%Y\%m\%d).json
-```
-
-### Windows Task Scheduler
-
-スケジュールタスクを作成するのだ：
-
-```powershell
-# 毎日9時にヘルスチェックを実行
-$action = New-ScheduledTaskAction -Execute "eset-manager" -Argument "health check --notify"
-$trigger = New-ScheduledTaskTrigger -Daily -At 9am
-Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "ESET Health Check" -Description "Daily ESET health monitoring"
-```
-
-### Systemd Timer (Linux)
-
-`/etc/systemd/system/eset-health-check.service` を作成するのだ：
-
-```ini
-[Unit]
-Description=ESET Health Check
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/eset-manager health check --notify
-User=esetmanager
-StandardOutput=journal
-StandardError=journal
-```
-
-`/etc/systemd/system/eset-health-check.timer` を作成するのだ：
-
-```ini
-[Unit]
-Description=Run ESET Health Check hourly
-
-[Timer]
-OnCalendar=hourly
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
-
-有効化して起動するのだ：
-
-```bash
-sudo systemctl enable eset-health-check.timer
-sudo systemctl start eset-health-check.timer
-```
+なかなか種類が多いのだ。
 
 ## 典型的なワークフロー
 
 ### ワークフロー1: 日次ヘルスモニタリング
 
 ```bash
-# 朝のヘルスチェックと通知
-eset-manager health check --notify
+# 1. CSVファイルを準備（対象PCのリスト）
+cat computers.csv
+# name
+# DESKTOP-ABC001
+# DESKTOP-ABC002
 
-# クリティカルな問題を確認
-eset-manager health list-issues --severity critical
+# 2. 情報取得
+python3 eset_manager.py info --csv computers.csv --output results.csv
 
-# 問題のあるデバイスを修正
-eset-manager task uninstall-reinstall \
-  --file critical-devices.txt \
-  --package "https://your-server.com/eset-installer.exe"
+# 3. 結果を確認
+cat results.csv
 ```
 
-### ワークフロー2: 大規模再インストール
-
-メジャーアップデート後など、複数のデバイスにESETを再インストールする必要があるときはこうするのだ：
+### ワークフロー2: 問題のあるPCの修復
 
 ```bash
-# 1. 全デバイスのリストを取得
-eset-manager device list > all-devices.txt
+# 1. 問題のあるPCをCSVファイルに記載
+echo "name" > problem_pcs.csv
+echo "DESKTOP-ABC001" >> problem_pcs.csv
 
-# 2. デバイスUUIDを抽出（手動またはスクリプト）
-# 1行に1つのUUIDでdevices-to-update.txtを作成
+# 2. アンインストール実行
+python3 eset_manager.py task --csv problem_pcs.csv --type SoftwareUninstallation
 
-# 3. アンインストール・再インストールを実行
-eset-manager task uninstall-reinstall \
-  --file devices-to-update.txt \
-  --package "https://your-server.com/eset-installer-v10.exe" \
-  --reboot-delay 10
-
-# 4. タスクを監視
-eset-manager task monitor <taskId>
+# 3. 再インストール実行
+python3 eset_manager.py task --csv problem_pcs.csv --type SoftwareInstallation \
+    --package "\\\\server\\share\\eset_installer.msi"
 ```
 
-### ワークフロー3: インシデント対応
-
-脅威が検出されたときはこうするのだ：
+### ワークフロー3: ウイルス定義の一括更新
 
 ```bash
-# 1. 脅威の詳細をヘルスチェック
-eset-manager health check --output incident-report.json
-
-# 2. 脅威のあるデバイスを確認
-cat incident-report.json | jq '.issues[] | select(.issueType=="threat_detected")'
-
-# 3. 必要なら感染したデバイスに再インストール
-eset-manager task uninstall-reinstall \
-  --devices uuid-of-infected-device \
-  --package "https://your-server.com/eset-installer.exe" \
-  --approval
+# 全PCの定義ファイルを更新
+python3 eset_manager.py task --csv all_computers.csv --type Update
 ```
 
 ## トラブルシューティング
 
+### SSL証明書エラー
+
+自己署名証明書を使用している場合はこうするのだ：
+```bash
+export ESET_VERIFY_SSL="false"
+```
+
+### HTTPを使いたい場合
+
+社内ネットワークでHTTPSが不要な場合：
+```bash
+export ESET_USE_HTTP="true"
+```
+
+または設定ファイルで：
+```json
+{
+    "use_http": true
+}
+```
+
 ### 認証エラー
 
-```bash
-# 認証情報を確認
-eset-manager config show
+1. ユーザー名/パスワードを確認するのだ
+2. ESET PROTECT管理者権限があることを確認するのだ
+3. ポート2223が開放されていることを確認するのだ
 
-# API接続をテスト
-curl -X POST https://your-tenant.eset.systems/api/v1/oauth2/token \
-  -d "grant_type=client_credentials&client_id=YOUR_ID&client_secret=YOUR_SECRET"
-```
+### コンピュータが見つからない
 
-### レート制限
+1. ESET PROTECTコンソールで該当PCが登録されているか確認するのだ
+2. PC名の大文字小文字を確認するのだ（内部では大文字小文字を無視してマッチングしているのだ）
+3. `--verbose`オプションで詳細ログを確認するのだ
 
-クライアントは適応型スロットリングで自動的にレート制限を処理するのだ。頻繁にレート制限の警告が出る場合は：
+### APIレスポンスのフィールド名が異なる
 
-1. 設定で `requestsPerMinute` を減らすのだ
-2. バースト処理を改善するため `burstSize` を増やすのだ
-3. `adaptiveEnabled` を有効にするのだ（デフォルトで有効のはず）
+環境によりAPIレスポンスのフィールド名が異なる場合があるのだ。
+`--verbose`オプションでレスポンスを確認して、必要に応じて
+`ComputerInfoExtractor.extract_info()`メソッドを調整するのだ。
 
-### TLS証明書の問題
+まあ、そういうこともあるのだ。
 
-自己署名証明書やカスタムCAの場合：
+## セキュリティに関する注意
 
-```json
-{
-  "tlsConfig": {
-    "minVersion": "TLS1.2",
-    "verifyCertificate": true,
-    "caCertPath": "/path/to/ca-bundle.crt"
-  }
-}
-```
-
-### デバイスが見つからない
-
-インストール直後はデバイスがすぐに表示されないことがあるのだ。初期同期のために5〜10分待つのだ。
-
-## セキュリティのベストプラクティス
-
-### 1. 認証情報管理
-
-**本番環境では認証情報を平文で保存してはいけないのだ！**
-
-本番環境ではHashiCorp Vaultを使うのだ：
-
-```json
-{
-  "auth": {
-    "vaultEnabled": true,
-    "vaultPath": "secret/eset-manager/credentials"
-  }
-}
-```
-
-### 2. 最小権限の原則
-
-必要なAPI権限のみを付与するのだ：
-- 監視には `devices:read`
-- タスクを展開する必要があるオペレーターにのみ `tasks:write`
-
-### 3. 監査ログ
-
-改ざん検出付きで監査ログを有効にするのだ：
-
-```json
-{
-  "auditLog": {
-    "enabled": true,
-    "logPath": "/var/log/eset-manager/audit.log",
-    "tamperDetection": true
-  }
-}
-```
-
-定期的にログを確認するのだ：
-
-```bash
-tail -f /var/log/eset-manager/audit.log | jq '.'
-```
-
-### 4. ネットワークセキュリティ
-
-- HTTPSのみを使うのだ（HTTPフォールバックなし）
-- TLS 1.2以上を有効にするのだ
-- 本番環境では証明書を検証するのだ
-- ファイアウォールルールでAPIアクセスを制限するのだ
-
-### 5. コンテナセキュリティ
-
-Dockerで実行する場合：
-- 非rootユーザーを使うのだ（すでに設定済み）
-- 読み取り専用ファイルシステムを有効にするのだ
-- リソース制限を使うのだ
-- ベースイメージを定期的に更新するのだ
-
-## APIリファレンス
-
-### ヘルスチェックの閾値
-
-| 閾値 | デフォルト | 説明 |
-|-----------|---------|-------------|
-| `offlineDeviceHours` | 24 | デバイスがオフラインとみなされるまでの時間 |
-| `outdatedDefinitionDays` | 7 | 定義が古いとみなされるまでの日数 |
-| `threatCountCritical` | 5 | クリティカルアラートまでの脅威数 |
-| `moduleErrorThreshold` | 2 | 警告までのモジュールエラー数 |
-
-### レート制限パラメータ
-
-| パラメータ | デフォルト | 説明 |
-|-----------|---------|-------------|
-| `requestsPerMinute` | 60 | 1分あたりの最大APIリクエスト |
-| `burstSize` | 10 | バースト容量（トークンバケットサイズ） |
-| `adaptiveEnabled` | true | 429エラー時に自動的にレートを下げる |
-
-## サポートとコントリビューション
-
-問題、質問、コントリビューションについては、TechSapoサポートに連絡するか、GitHubイシューを提出するのだ。
+- パスワードはコマンドライン引数ではなく、環境変数または設定ファイルで指定することを推奨するのだ
+- 設定ファイルのパーミッションは`600`（所有者のみ読み書き可能）に設定するのだ
+- ログ出力時にパスワードは自動的にマスクされるのだ
+- HTTPを使用する場合は、社内ネットワークなど信頼できる環境に限定するのだ
 
 ## ライセンス
 
-MIT License - 詳細はLICENSEファイルを見るのだ。
+MIT License
+
+## 参考資料
+
+- [ESET PROTECT On-Prem API Documentation](https://help.eset.com/protect_install/11.1/api/)
+- [ESET PROTECT On-Prem 11.1 API Examples](https://help.eset.com/protect_install/11.1/api_examples/)
+- [ClientTaskConfiguration_Type Enum](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
+
+何かわからないことがあったら、これらのドキュメントを見るといいのだ。
