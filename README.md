@@ -1,8 +1,8 @@
-# Code Expert なのだ
+# Code Expert
 
-AIの力を借りてコードレビューやリファクタリングをするツールなのだ。Wall-Bounceっていう複数のLLMを使った分析システムを使っているのだ。
+ふむ、AIの力を借りてコードレビューやリファクタリングをするツールか。Wall-Bounceという複数のLLMを使った分析システムを採用している。なかなか興味深い処方だ。
 
-> 実はこのツール、[Scripter](https://github.com/wombat2006/scripter)っていう先輩プロジェクトのWall-Bounce技術を受け継いでいるのだ。なかなかやるではないか。
+> このツールは[Scripter](https://github.com/wombat2006/scripter)というプロジェクトのWall-Bounce技術を受け継いでいるらしい。血筋というものは侮れぬ。
 
 ## 目次
 
@@ -21,20 +21,20 @@ AIの力を借りてコードレビューやリファクタリングをするツ
 
 | 機能 | 説明 | コマンド例 |
 |------|------|-----------|
-| コードレビュー | セキュリティ、パフォーマンス、可読性、ベストプラクティスをチェック | `code-expert review file.ts` |
-| リファクタリング | コードの動作を変えずに品質を上げる | `code-expert refactor file.ts` |
-| デバッグ | バグを見つけて直すお手伝い | `code-expert debug file.ts` |
+| コードレビュー | セキュリティ、パフォーマンス、可読性、ベストプラクティスを診断 | `code-expert review file.ts` |
+| リファクタリング | コードの動作を変えずに品質を向上させる | `code-expert refactor file.ts` |
+| デバッグ | バグを特定し、処方箋を提示 | `code-expert debug file.ts` |
 | 最適化 | パフォーマンスと効率を改善 | `code-expert optimize file.ts` |
-| コード解説 | 複雑なコードをわかりやすく説明 | `code-expert explain file.ts` |
-| テスト生成 | 包括的なテストケースを作成 | `code-expert test file.ts` |
+| コード解説 | 複雑なコードの仕組みを解明 | `code-expert explain file.ts` |
+| テスト生成 | 包括的なテストケースを調合 | `code-expert test file.ts` |
 
 ### マルチLLM分析
 
-3つのLLMが順番に分析するのだ。それぞれの得意分野を活かして、より精度の高い結果を出すのだ。
+3つのLLMが順番に分析を行う仕組みだ。それぞれの得意分野を活かすことで、単体では見落としがちな問題も発見できる。毒を以て毒を制す...いや、これは少し違うか。
 
 ```
-Round 1: GPT-5 Codex / Qwen3 Coder  → コード理解と初期分析
-Round 2: Claude Sonnet 4            → 深い洞察と改善提案
+Round 1: GPT-5 Codex / Qwen3 Coder  → コード構造理解と初期診断
+Round 2: Claude Sonnet 4            → 深い洞察と改善処方
 Round 3: Gemini 2.5 Pro             → 最終検証と統合
 ```
 
@@ -88,7 +88,7 @@ code-expert interactive
 
 ### コードレビュー
 
-セキュリティ、パフォーマンス、ベストプラクティスのチェックをするのだ：
+セキュリティ、パフォーマンス、ベストプラクティスの観点から診断を行う：
 
 ```bash
 # 基本的な使い方
@@ -112,9 +112,9 @@ code-expert review src/ --recursive
 
 #### レビュー観点一覧
 
-| 観点 | 説明 | チェック内容 |
+| 観点 | 説明 | 診断内容 |
 |------|------|-------------|
-| `security` | セキュリティ | SQLインジェクション、XSS、認証の問題、機密情報の露出 |
+| `security` | セキュリティ | SQLインジェクション、XSS、認証の欠陥、機密情報の露出 |
 | `performance` | パフォーマンス | 非効率な処理、N+1クエリ、メモリリーク、最適化の余地 |
 | `readability` | 可読性 | 命名規則、関数の長さ、複雑さ、コメントの適切さ |
 | `best-practices` | ベストプラクティス | 言語固有のパターン、規約、アンチパターンの検出 |
@@ -138,12 +138,12 @@ Code Review Results
    問題のコード:
    const query = `SELECT * FROM users WHERE id = ${userId}`;
 
-   修正案:
+   処方箋:
    const query = 'SELECT * FROM users WHERE id = ?';
    db.query(query, [userId]);
 
-   理由: ユーザー入力を直接SQLに埋め込むと、攻撃者が任意のSQLを
-   実行できてしまうのだ。パラメータ化クエリを使うべきなのだ。
+   所見: ユーザー入力を直接SQLに埋め込むのは毒を盛られるようなものだ。
+   パラメータ化クエリで解毒すべきである。
 
 🔴 [HIGH] security (Line 78)
    Weak password validation
@@ -151,15 +151,15 @@ Code Review Results
    問題のコード:
    if (password.length >= 6) { ... }
 
-   修正案:
+   処方箋:
    const isValid = password.length >= 12 &&
                    /[A-Z]/.test(password) &&
                    /[a-z]/.test(password) &&
                    /[0-9]/.test(password) &&
                    /[!@#$%^&*]/.test(password);
 
-   理由: 6文字は短すぎるのだ。現代のセキュリティ基準では最低12文字、
-   大文字小文字数字記号を含めるべきなのだ。
+   所見: 6文字では薬効が足りぬ。現代のセキュリティ基準では最低12文字、
+   大文字小文字数字記号を含める必要がある。
 
 🟡 [MEDIUM] performance (Line 120)
    N+1 query detected in loop
@@ -172,7 +172,7 @@ Models: GPT-5 Codex → Claude Sonnet 4 → Gemini 2.5 Pro
 
 ### コードリファクタリング
 
-コードを改善するのだ：
+コードの体質改善を行う：
 
 ```bash
 # 基本的な使い方
@@ -193,7 +193,7 @@ code-expert refactor myfile.ts --dry-run
 
 #### リファクタリング目標一覧
 
-| 目標 | 説明 | 適用される改善 |
+| 目標 | 説明 | 適用される処方 |
 |------|------|---------------|
 | `readability` | 可読性向上 | 明確な命名、関数の分割、コメント追加 |
 | `performance` | 性能改善 | アルゴリズム最適化、キャッシュ導入、データ構造改善 |
@@ -229,8 +229,9 @@ Refactoring Results
      if (parent) { ... }
    }
 
-   説明: ネストしたループをハッシュマップのルックアップに置き換えたのだ。
-   O(n²) → O(n) になって、1000件のデータで約100倍速くなるのだ。
+   所見: ネストしたループをハッシュマップに置き換えた。
+   O(n²) → O(n) となり、1000件のデータで約100倍速くなる。
+   毒の効き目は配合次第というわけだ。
 
 ✨ Improvement 2: Memoization (Impact: 8/10)
    ...
@@ -240,7 +241,7 @@ Refactoring Results
 
 ### インタラクティブモード
 
-複数の操作を連続で行いたいときに便利なのだ：
+複数の操作を連続で行いたいときに便利だ：
 
 ```bash
 code-expert interactive
@@ -269,16 +270,16 @@ Commands:
 [リファクタリング提案が表示される]
 
 > exit
-さようならなのだ。また来るといいのだ。
+ふむ、また何かあれば呼ぶといい。
 ```
 
 ## ESET Manager
 
-このリポジトリには、ESET PROTECT On-Prem 11.1を管理するPythonツールも含まれているのだ。
+このリポジトリには、ESET PROTECT On-Prem 11.1を管理するPythonツールも含まれている。
 
 ### 概要
 
-社内PCにインストールされているESETアンチウイルスの状態を監視して、問題があればリモートで修復できるのだ。
+社内PCにインストールされているESETアンチウイルスの状態を監視し、問題があればリモートで処置できる。毒（ウイルス）を検知して解毒（駆除）する...まさに薬師の仕事に通じるものがある。
 
 ### 主な機能
 
@@ -306,11 +307,11 @@ python3 eset_manager.py info --csv computers.csv --output results.csv
 python3 eset_manager.py --dry-run task --csv computers.csv --type SoftwareUninstallation
 ```
 
-詳しくは [ESET_MANAGER_README.md](ESET_MANAGER_README.md) を見るのだ。
+詳しくは [ESET_MANAGER_README.md](ESET_MANAGER_README.md) を参照されたし。
 
 ## Wall-Bounce技術について
 
-Wall-Bounceは、複数のLLMを順番に使って分析精度を高める技術なのだ。壁にボールを跳ね返すように、各LLMの結果を次のLLMに渡して、より深い分析を行うのだ。
+Wall-Bounceは、複数のLLMを順番に使って分析精度を高める技術だ。壁にボールを跳ね返すように、各LLMの結果を次のLLMに渡して、より深い分析を行う。
 
 ### 仕組み
 
@@ -324,19 +325,19 @@ Wall-Bounceは、複数のLLMを順番に使って分析精度を高める技術
 │       ▼                                                      │
 │  ┌─────────────┐                                            │
 │  │ Round 1     │  GPT-5 Codex / Qwen3 Coder                │
-│  │ 初期分析    │  → コード構造理解、基本的な問題検出        │
+│  │ 初期診断    │  → コード構造理解、基本的な問題検出        │
 │  └─────────────┘                                            │
 │       │                                                      │
 │       ▼                                                      │
 │  ┌─────────────┐                                            │
 │  │ Round 2     │  Claude Sonnet 4                           │
-│  │ 深掘り分析  │  → 詳細な洞察、改善提案、エッジケース検討  │
+│  │ 精密検査    │  → 詳細な洞察、改善処方、エッジケース検討  │
 │  └─────────────┘                                            │
 │       │                                                      │
 │       ▼                                                      │
 │  ┌─────────────┐                                            │
 │  │ Round 3     │  Gemini 2.5 Pro                            │
-│  │ 最終検証    │  → 結果統合、矛盾解消、最終レポート生成    │
+│  │ 最終診断    │  → 結果統合、矛盾解消、最終レポート生成    │
 │  └─────────────┘                                            │
 │       │                                                      │
 │       ▼                                                      │
@@ -347,13 +348,13 @@ Wall-Bounceは、複数のLLMを順番に使って分析精度を高める技術
 
 ### なぜ複数のLLMを使うのか
 
-1. **多角的な視点**: 各LLMには得意分野があるのだ。複数を組み合わせることで、見落としを減らせるのだ。
+1. **多角的な視点**: 各LLMには得意分野がある。複数を組み合わせることで、見落としを減らせる。異なる生薬を配合して効能を高めるようなものだ。
 
-2. **相互検証**: 1つのLLMが見逃した問題を、別のLLMが発見することがあるのだ。
+2. **相互検証**: 1つのLLMが見逃した問題を、別のLLMが発見することがある。毒見役を複数置くのと同じ理屈である。
 
-3. **深い分析**: 前のラウンドの結果を踏まえて、次のラウンドでより深く掘り下げられるのだ。
+3. **深い分析**: 前のラウンドの結果を踏まえて、次のラウンドでより深く掘り下げられる。
 
-4. **信頼性向上**: 複数のLLMが同じ問題を指摘すれば、その問題は確実に対処すべきなのだ。
+4. **信頼性向上**: 複数のLLMが同じ問題を指摘すれば、その問題は確実に対処すべきだと判断できる。
 
 ## アーキテクチャ
 
@@ -406,7 +407,7 @@ npm run watch        # ファイル変更を監視してビルド
 
 # テスト
 npm test             # テスト実行
-npm run test:watch   # テストをwatch モードで実行
+npm run test:watch   # テストをwatchモードで実行
 npm run test:coverage # カバレッジレポート生成
 
 # 品質チェック
@@ -435,31 +436,31 @@ npm run validate     # 全チェック実行
 
 ### Q: 無料で使えるのか？
 
-A: Wall-Bounce APIの利用には認証情報が必要なのだ。TechSapoのアカウントを作成して、API認証情報を取得するのだ。
+A: Wall-Bounce APIの利用には認証情報が必要だ。TechSapoのアカウントを作成し、API認証情報を取得する必要がある。
 
 ### Q: オフラインで使えるのか？
 
-A: 残念ながら、LLM分析にはインターネット接続が必要なのだ。ただし、ESET Managerは社内ネットワークのみで動作するのだ。
+A: 残念ながら、LLM分析にはインターネット接続が必要だ。ただし、ESET Managerは社内ネットワークのみで動作する。
 
 ### Q: 自分のコードがどこかに保存されるのか？
 
-A: 分析のためにWall-Bounce APIにコードが送信されるが、分析後は保存されないのだ。プライバシーポリシーはTechSapoのサイトを確認するといいのだ。
+A: 分析のためにWall-Bounce APIにコードが送信されるが、分析後は保存されない。詳細はTechSapoのプライバシーポリシーを確認されたし。
 
-### Q: どのくらいの精度なのか？
+### Q: どのくらいの精度があるのか？
 
-A: 3つのLLMを組み合わせることで、単一のLLMよりも高い精度を達成しているのだ。ただし、最終的な判断は人間がすべきなのだ。AIの提案は参考として使うのだ。
+A: 3つのLLMを組み合わせることで、単一のLLMよりも高い精度を達成している。ただし、最終的な判断は人間がすべきだ。AIの提案は参考として使うこと。毒も薬も使い方次第というものだ。
 
 ### Q: 大きなファイルでも使えるのか？
 
-A: ファイルサイズには制限があるのだ（詳細はAPIドキュメント参照）。大きなファイルは分割して分析することをおすすめするのだ。
+A: ファイルサイズには制限がある（詳細はAPIドキュメント参照）。大きなファイルは分割して分析することを推奨する。
 
 ### Q: エラーが出たらどうすればいいのか？
 
-A: まず `--verbose` オプションで詳細なログを確認するのだ。それでも解決しない場合は、GitHub Issuesに報告するといいのだ。
+A: まず `--verbose` オプションで詳細なログを確認するといい。それでも解決しない場合は、GitHub Issuesに報告されたし。
 
 ## ライセンス
 
-MIT License - 詳細は[LICENSE](LICENSE)を見るのだ。
+MIT License - 詳細は[LICENSE](LICENSE)を参照。
 
 ## 関連プロジェクト
 
@@ -472,10 +473,10 @@ MIT License - 詳細は[LICENSE](LICENSE)を見るのだ。
 - Email: support@techsapo.com
 - ドキュメント: [techsapo.com/docs](https://techsapo.com/docs)
 
-困ったことがあったら遠慮なく聞くのだ。
+困ったことがあれば遠慮なく聞くといい。私も暇ではないが、毒と薬の見分け方くらいなら教えてやれる。
 
 ---
 
-**TechSapo Wall-Bounce Technology搭載なのだ**
+**TechSapo Wall-Bounce Technology搭載**
 
-なかなか贅沢な構成ではないか。使ってみるといいのだ。
+ふむ、なかなか贅沢な処方だ。試してみるといい。

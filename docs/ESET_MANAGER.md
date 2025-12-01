@@ -1,11 +1,13 @@
-# ESET Manager 詳細ドキュメント なのだ
+# ESET Manager 詳細ドキュメント
 
-> **Note**: メインのドキュメントは [ESET_MANAGER_README.md](../ESET_MANAGER_README.md) を参照するのだ。
-> このファイルは補足的な技術情報を提供するのだ。
+> **Note**: メインのドキュメントは [ESET_MANAGER_README.md](../ESET_MANAGER_README.md) を参照されたし。
+> このファイルは補足的な技術情報を提供する。薬の成分表のようなものだ。
 
 ## 内部アーキテクチャ
 
 ### クラス構成
+
+ふむ、内部構造を見てみよう。なかなか整理された処方だ。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -55,6 +57,8 @@
 
 #### 情報取得フロー
 
+患者（PC）の状態を診断する流れだ。
+
 ```
 1. CSVファイル読み込み
    │
@@ -87,6 +91,8 @@
 ```
 
 #### タスク実行フロー
+
+治療（タスク実行）の流れだ。
 
 ```
 1. CSVファイル読み込み
@@ -211,6 +217,8 @@
 
 ### リトライロジック
 
+失敗しても諦めない。毒の効き目は一度では測れぬこともある。
+
 ```python
 retry_strategy = Retry(
     total=config["retries"],        # デフォルト: 3回
@@ -250,7 +258,7 @@ class ComputerNotFoundError(ESETAPIError):
 
 ### ComputerInfoExtractor のカスタマイズ
 
-環境によってAPIレスポンスの形式が異なる場合、`extract_info()`メソッドをカスタマイズするのだ。
+環境によってAPIレスポンスの形式が異なる場合、`extract_info()`メソッドをカスタマイズする必要がある。薬の調合は環境に合わせて調整するものだ。
 
 ```python
 class ComputerInfoExtractor:
@@ -300,7 +308,7 @@ python3 eset_manager.py task --csv computers.csv --type CustomTask
 
 ### 大量PCの処理
 
-1000台以上のPCを処理する場合の推奨設定：
+1000台以上のPCを処理する場合の推奨設定だ。大量の患者を診るには準備が必要である。
 
 ```bash
 # タイムアウトを延長
@@ -328,6 +336,8 @@ done
 ## テスト
 
 ### dry-runモード
+
+本番環境で実行する前に、必ずdry-runで確認すること。毒薬を投与する前に効能を確認するのは当然のことだ。
 
 ```bash
 # すべての操作をdry-runで確認
@@ -364,3 +374,5 @@ class TestComputerInfoExtractor(unittest.TestCase):
 - [ESET_MANAGER_README.md](../ESET_MANAGER_README.md) - メインドキュメント
 - [ESET PROTECT API Documentation](https://help.eset.com/protect_install/11.1/api/)
 - [ClientTaskConfiguration_Type](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
+
+ふむ、ここまで読んだか。なかなか勉強熱心だ。毒も薬も知識があってこそ使いこなせるというものだ。

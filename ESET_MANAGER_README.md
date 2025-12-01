@@ -1,6 +1,6 @@
-# ESET PROTECT On-Prem 11.1 Manager なのだ
+# ESET PROTECT On-Prem 11.1 Manager
 
-ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCのモニタリングとリモート操作を行うPythonツールなのだ。
+ふむ、ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCのモニタリングとリモート操作を行うPythonツールか。ウイルスという毒を検知し、駆除する...薬師としてはなかなか興味深い仕事だ。
 
 ## 目次
 
@@ -22,11 +22,11 @@ ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCの�
 
 | 機能 | 説明 | ユースケース |
 |------|------|-------------|
-| 情報取得 | PCのESET状態を一括取得 | 定期的な健全性チェック |
-| アンインストール | ESETをサイレントアンインストール | 問題のあるインストールの修復 |
+| 情報取得 | PCのESET状態を一括取得 | 定期的な健全性診断 |
+| アンインストール | ESETをサイレントアンインストール | 問題のあるインストールの処置 |
 | インストール | ESETをサイレントインストール | 新規展開、再インストール |
 | コマンド実行 | 任意のコマンドを実行 | トラブルシュート、情報収集 |
-| 定義更新 | ウイルス定義を更新 | 緊急の定義配布 |
+| 定義更新 | ウイルス定義を更新 | 緊急の解毒剤配布 |
 | スキャン | オンデマンドスキャン | セキュリティ監査 |
 
 ### 取得できる情報
@@ -49,7 +49,7 @@ ESET PROTECT On-Prem 11.1のJSON-RPC APIを使って、クライアントPCの�
 
 ### dry-run機能
 
-実際のAPI呼び出しを行わずに動作確認できるのだ。本番環境で実行する前に必ずdry-runで確認することをおすすめするのだ。
+実際のAPI呼び出しを行わずに動作確認できる。本番環境で実行する前に必ずdry-runで確認することを推奨する。毒薬を処方する前に効能を確認するのは当然のことだ。
 
 ```bash
 # dry-runモード（実際には何も実行しない）
@@ -85,7 +85,7 @@ cd automate_it_hygiene
 pip install -r eset_requirements.txt
 ```
 
-これだけなのだ。簡単ではないか。
+これだけだ。簡単であろう。
 
 ### 依存関係
 
@@ -93,13 +93,13 @@ pip install -r eset_requirements.txt
 requests>=2.28.0
 ```
 
-`requests`ライブラリだけで動くのだ。軽量なのだ。
+`requests`ライブラリだけで動く。軽量な処方だ。
 
 ## 設定
 
 ### 方法1: 環境変数（推奨）
 
-環境変数で設定するのが一番安全なのだ。
+環境変数で設定するのが最も安全だ。パスワードを直接ファイルに書くのは毒を放置するようなものである。
 
 ```bash
 # 必須項目
@@ -133,7 +133,7 @@ python3 eset_manager.py info --csv computers.csv
 
 ### 方法2: 設定ファイル
 
-設定ファイルを使う場合は、パーミッションに注意するのだ。
+設定ファイルを使う場合は、パーミッションに細心の注意を払うこと。
 
 **Linux**: `~/.config/eset_manager/config.json`
 **Windows**: `%APPDATA%\eset_manager\config.json`
@@ -152,7 +152,7 @@ python3 eset_manager.py info --csv computers.csv
 ```
 
 ```bash
-# Linuxの場合、パーミッションを設定するのだ
+# Linuxの場合、パーミッションを設定すること
 chmod 600 ~/.config/eset_manager/config.json
 ```
 
@@ -234,7 +234,7 @@ python3 eset_manager.py task --csv computers.csv --type OnDemandScan
 
 ### ワークフロー1: 日次ヘルスチェック
 
-毎朝、ESETの健全性をチェックするワークフローなのだ。
+毎朝、ESETの健全性をチェックするワークフローだ。予防は治療に勝る。
 
 ```bash
 #!/bin/bash
@@ -261,9 +261,9 @@ echo "=== Outdated Definitions ==="
 # ... 日付比較のロジック
 ```
 
-### ワークフロー2: 問題PCの修復
+### ワークフロー2: 問題PCの処置
 
-ESETが正常に動作していないPCを修復するワークフローなのだ。
+ESETが正常に動作していないPCを処置するワークフローだ。
 
 ```bash
 #!/bin/bash
@@ -305,7 +305,7 @@ echo "Done!"
 
 ### ワークフロー3: 緊急ウイルス定義更新
 
-新しいマルウェアが発見されたときに、全PCの定義を緊急更新するワークフローなのだ。
+新しいマルウェアが発見されたときに、全PCの定義を緊急更新するワークフローだ。新たな毒が発見されたら、直ちに解毒剤を配布せねばならぬ。
 
 ```bash
 #!/bin/bash
@@ -336,7 +336,7 @@ fi
 
 ### ワークフロー4: バッチ処理（大量PC）
 
-1000台以上のPCを処理する場合は、CSVを分割して処理するのがおすすめなのだ。
+1000台以上のPCを処理する場合は、CSVを分割して処理することを推奨する。一度に大量の薬を投与すると副作用が出かねない。
 
 ```bash
 #!/bin/bash
@@ -390,7 +390,7 @@ WORKSTATION-DEV
 - `hostname`
 - `pc`
 
-どれを使っても大丈夫なのだ。柔軟に対応しているのだ。
+どれを使っても問題ない。柔軟に対応している。
 
 ### 出力CSV
 
@@ -409,7 +409,7 @@ WORKSTATION-DEV
 
 ## TaskType一覧
 
-ESET PROTECT On-Prem 11.1で使用できるタスクタイプなのだ。
+ESET PROTECT On-Prem 11.1で使用できるタスクタイプだ。
 
 | 番号 | 名称 | 説明 | よく使う |
 |------|------|------|---------|
@@ -446,7 +446,7 @@ ERROR: Connection refused to eset-server.example.com:2223
 ERROR: SSL: CERTIFICATE_VERIFY_FAILED
 ```
 
-**解決方法:**
+**処方箋:**
 
 ```bash
 # 方法1: SSL検証を無効化（自己署名証明書の場合）
@@ -484,7 +484,7 @@ WARNING: Computer 'DESKTOP-XYZ999' not found in ESET PROTECT
 ERROR: Request timed out after 30 seconds
 ```
 
-**解決方法:**
+**処方箋:**
 
 ```bash
 # タイムアウトを延長
@@ -496,20 +496,20 @@ export ESET_RETRIES="5"
 
 ### APIレスポンスのフィールド名が異なる
 
-環境によってAPIレスポンスの形式が異なることがあるのだ。
+環境によってAPIレスポンスの形式が異なることがある。
 
 ```bash
 # 詳細ログでレスポンスを確認
 python3 eset_manager.py -v info --csv computers.csv 2>&1 | grep -A 50 "API Response"
 ```
 
-必要に応じて `ComputerInfoExtractor.extract_info()` メソッドを調整するのだ。
+必要に応じて `ComputerInfoExtractor.extract_info()` メソッドを調整すること。
 
 ## セキュリティ
 
 ### パスワード管理
 
-**やってはいけないこと:**
+**やってはいけないこと（毒を放置するようなものだ）:**
 ```bash
 # ❌ コマンドライン引数でパスワードを渡す（履歴に残る）
 python3 eset_manager.py --password "secret123" info ...
@@ -532,7 +532,7 @@ export ESET_PASSWORD="$(vault kv get -field=password secret/eset)"
 
 ### ログのマスキング
 
-パスワードはログ出力時に自動的にマスクされるのだ。
+パスワードはログ出力時に自動的にマスクされる。
 
 ```
 DEBUG: API Request: {"username": "Administrator", "password": "********"}
@@ -540,15 +540,15 @@ DEBUG: API Request: {"username": "Administrator", "password": "********"}
 
 ### ネットワークセキュリティ
 
-- 可能な限りHTTPSを使用するのだ
-- HTTPを使う場合は、社内ネットワーク内に限定するのだ
-- ファイアウォールでESETサーバーへのアクセスを制限するのだ
+- 可能な限りHTTPSを使用すること
+- HTTPを使う場合は、社内ネットワーク内に限定すること
+- ファイアウォールでESETサーバーへのアクセスを制限すること
 
 ## API詳細
 
 ### 使用しているAPI
 
-このツールはESET PROTECT On-Prem 11.1のJSON-RPC APIを使用しているのだ。
+このツールはESET PROTECT On-Prem 11.1のJSON-RPC APIを使用している。
 
 ```
 Base URL: http(s)://{host}:{port}/api
@@ -566,7 +566,7 @@ Content-Type: application/json
 
 ### セッション管理
 
-APIはセッションベースで動作するのだ。
+APIはセッションベースで動作する。
 
 ```
 1. ログイン → セッショントークン取得
@@ -584,4 +584,4 @@ MIT License
 - [ESET PROTECT On-Prem 11.1 API Examples](https://help.eset.com/protect_install/11.1/api_examples/)
 - [ClientTaskConfiguration_Type Enum](https://help.eset.com/protect_install/12.1/api/Era/Common/DataDefinition/Task/ClientTaskConfiguration_Type.html)
 
-何かわからないことがあったら、これらのドキュメントを見るといいのだ。それでもわからなければ、GitHubのIssuesで聞いてくれるといいのだ。
+何かわからないことがあれば、これらのドキュメントを参照するといい。それでもわからなければ、GitHubのIssuesで聞くがよい。私も暇ではないが、毒の調合法くらいなら教えてやれる。
