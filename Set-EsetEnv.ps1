@@ -82,14 +82,14 @@ function Set-EnvVar {
     param(
         [string]$Name,
         [string]$Value,
-        [bool]$Persist
+        [switch]$Persist
     )
 
     # プロセス環境変数に設定
     [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
 
     # 永続化オプションが指定された場合はユーザー環境変数にも設定
-    if ($Persist -and $Value) {
+    if ($Persist.IsPresent -and $Value) {
         [Environment]::SetEnvironmentVariable($Name, $Value, "User")
         Write-Host "  [永続化] $Name" -ForegroundColor DarkGray
     }
@@ -120,14 +120,14 @@ if ($ConfigFile) {
 
         Write-Host "`n=== 設定ファイルから読み込み ===" -ForegroundColor Cyan
 
-        if ($config.host) { Set-EnvVar "ESET_HOST" $config.host $Persist }
-        if ($config.port) { Set-EnvVar "ESET_PORT" $config.port.ToString() $Persist }
-        if ($config.username) { Set-EnvVar "ESET_USERNAME" $config.username $Persist }
-        if ($config.domain) { Set-EnvVar "ESET_DOMAIN" $config.domain $Persist }
-        if ($null -ne $config.use_http) { Set-EnvVar "ESET_USE_HTTP" $config.use_http.ToString().ToLower() $Persist }
-        if ($null -ne $config.verify_ssl) { Set-EnvVar "ESET_VERIFY_SSL" $config.verify_ssl.ToString().ToLower() $Persist }
-        if ($config.timeout) { Set-EnvVar "ESET_TIMEOUT" $config.timeout.ToString() $Persist }
-        if ($config.retries) { Set-EnvVar "ESET_RETRIES" $config.retries.ToString() $Persist }
+        if ($config.host) { Set-EnvVar -Name "ESET_HOST" -Value $config.host -Persist:$Persist }
+        if ($config.port) { Set-EnvVar -Name "ESET_PORT" -Value $config.port.ToString() -Persist:$Persist }
+        if ($config.username) { Set-EnvVar -Name "ESET_USERNAME" -Value $config.username -Persist:$Persist }
+        if ($config.domain) { Set-EnvVar -Name "ESET_DOMAIN" -Value $config.domain -Persist:$Persist }
+        if ($null -ne $config.use_http) { Set-EnvVar -Name "ESET_USE_HTTP" -Value $config.use_http.ToString().ToLower() -Persist:$Persist }
+        if ($null -ne $config.verify_ssl) { Set-EnvVar -Name "ESET_VERIFY_SSL" -Value $config.verify_ssl.ToString().ToLower() -Persist:$Persist }
+        if ($config.timeout) { Set-EnvVar -Name "ESET_TIMEOUT" -Value $config.timeout.ToString() -Persist:$Persist }
+        if ($config.retries) { Set-EnvVar -Name "ESET_RETRIES" -Value $config.retries.ToString() -Persist:$Persist }
 
         # パスワードは設定ファイルにあっても再入力を促す（セキュリティ上の理由）
         if ($config.password) {
@@ -135,16 +135,16 @@ if ($ConfigFile) {
             Write-Host "セキュリティのため、ファイルからパスワードを削除することを推奨する。" -ForegroundColor Yellow
             $useFilePassword = Read-Host "ファイルのパスワードを使用するか? (y/N)"
             if ($useFilePassword -eq 'y' -or $useFilePassword -eq 'Y') {
-                Set-EnvVar "ESET_PASSWORD" $config.password $false  # パスワードは永続化しない
+                Set-EnvVar -Name "ESET_PASSWORD" -Value $config.password  # パスワードは永続化しない
             }
             else {
                 $password = Read-SecurePassword "パスワードを入力"
-                Set-EnvVar "ESET_PASSWORD" $password $false
+                Set-EnvVar -Name "ESET_PASSWORD" -Value $password
             }
         }
         else {
             $password = Read-SecurePassword "パスワードを入力"
-            Set-EnvVar "ESET_PASSWORD" $password $false
+            Set-EnvVar -Name "ESET_PASSWORD" -Value $password
         }
 
         Write-Host "`n設定完了。" -ForegroundColor Green
@@ -158,16 +158,16 @@ if ($ConfigFile) {
 elseif ($PSCmdlet.ParameterSetName -eq 'Manual' -and $EsetHost) {
     Write-Host "`n=== パラメータから設定 ===" -ForegroundColor Cyan
 
-    Set-EnvVar "ESET_HOST" $EsetHost $Persist
-    Set-EnvVar "ESET_PORT" $Port.ToString() $Persist
-    if ($Username) { Set-EnvVar "ESET_USERNAME" $Username $Persist }
-    if ($Domain) { Set-EnvVar "ESET_DOMAIN" $Domain $Persist }
-    if ($UseHttp) { Set-EnvVar "ESET_USE_HTTP" "true" $Persist }
-    if ($SkipSslVerify) { Set-EnvVar "ESET_VERIFY_SSL" "false" $Persist }
+    Set-EnvVar -Name "ESET_HOST" -Value $EsetHost -Persist:$Persist
+    Set-EnvVar -Name "ESET_PORT" -Value $Port.ToString() -Persist:$Persist
+    if ($Username) { Set-EnvVar -Name "ESET_USERNAME" -Value $Username -Persist:$Persist }
+    if ($Domain) { Set-EnvVar -Name "ESET_DOMAIN" -Value $Domain -Persist:$Persist }
+    if ($UseHttp) { Set-EnvVar -Name "ESET_USE_HTTP" -Value "true" -Persist:$Persist }
+    if ($SkipSslVerify) { Set-EnvVar -Name "ESET_VERIFY_SSL" -Value "false" -Persist:$Persist }
 
     # パスワードは常に対話入力
     $password = Read-SecurePassword "パスワードを入力"
-    Set-EnvVar "ESET_PASSWORD" $password $false  # パスワードは永続化しない
+    Set-EnvVar -Name "ESET_PASSWORD" -Value $password  # パスワードは永続化しない
 
     Write-Host "`n設定完了。" -ForegroundColor Green
 }
@@ -179,15 +179,15 @@ else {
     # ホスト
     $currentHost = $env:ESET_HOST
     $inputHost = Read-Host "ESETサーバーホスト名$(if ($currentHost) { " [$currentHost]" })"
-    if ($inputHost) { Set-EnvVar "ESET_HOST" $inputHost $Persist }
+    if ($inputHost) { Set-EnvVar -Name "ESET_HOST" -Value $inputHost -Persist:$Persist }
     elseif ($currentHost) { Write-Host "  (現在の値を維持)" -ForegroundColor DarkGray }
 
     # ポート
     $currentPort = $env:ESET_PORT
     if (-not $currentPort) { $currentPort = "2223" }
     $inputPort = Read-Host "ポート番号 [$currentPort]"
-    if ($inputPort) { Set-EnvVar "ESET_PORT" $inputPort $Persist }
-    else { Set-EnvVar "ESET_PORT" $currentPort $Persist }
+    if ($inputPort) { Set-EnvVar -Name "ESET_PORT" -Value $inputPort -Persist:$Persist }
+    else { Set-EnvVar -Name "ESET_PORT" -Value $currentPort -Persist:$Persist }
 
     # 認証方式
     Write-Host "`n--- 認証設定 ---" -ForegroundColor Yellow
@@ -196,41 +196,41 @@ else {
         # AD認証
         $currentDomain = $env:ESET_DOMAIN
         $inputDomain = Read-Host "ドメイン名$(if ($currentDomain) { " [$currentDomain]" })"
-        if ($inputDomain) { Set-EnvVar "ESET_DOMAIN" $inputDomain $Persist }
+        if ($inputDomain) { Set-EnvVar -Name "ESET_DOMAIN" -Value $inputDomain -Persist:$Persist }
         elseif ($currentDomain) { Write-Host "  (現在の値を維持)" -ForegroundColor DarkGray }
     }
     else {
         # ローカル認証の場合はドメインをクリア
-        Set-EnvVar "ESET_DOMAIN" "" $Persist
+        Set-EnvVar -Name "ESET_DOMAIN" -Value ""
     }
 
     # ユーザー名
     $currentUser = $env:ESET_USERNAME
     $inputUser = Read-Host "ユーザー名$(if ($currentUser) { " [$currentUser]" })"
-    if ($inputUser) { Set-EnvVar "ESET_USERNAME" $inputUser $Persist }
+    if ($inputUser) { Set-EnvVar -Name "ESET_USERNAME" -Value $inputUser -Persist:$Persist }
     elseif ($currentUser) { Write-Host "  (現在の値を維持)" -ForegroundColor DarkGray }
 
     # パスワード（常に入力、マスク表示）
     $password = Read-SecurePassword "パスワード"
     if ($password) {
-        Set-EnvVar "ESET_PASSWORD" $password $false  # パスワードは永続化しない
+        Set-EnvVar -Name "ESET_PASSWORD" -Value $password  # パスワードは永続化しない
     }
 
     # 接続オプション
     Write-Host "`n--- 接続オプション ---" -ForegroundColor Yellow
     $useHttp = Read-Host "HTTPを使用するか? (y/N)"
     if ($useHttp -eq 'y' -or $useHttp -eq 'Y') {
-        Set-EnvVar "ESET_USE_HTTP" "true" $Persist
+        Set-EnvVar -Name "ESET_USE_HTTP" -Value "true" -Persist:$Persist
     }
     else {
-        Set-EnvVar "ESET_USE_HTTP" "false" $Persist
+        Set-EnvVar -Name "ESET_USE_HTTP" -Value "false" -Persist:$Persist
 
         $skipSsl = Read-Host "SSL証明書検証をスキップするか? (y/N)"
         if ($skipSsl -eq 'y' -or $skipSsl -eq 'Y') {
-            Set-EnvVar "ESET_VERIFY_SSL" "false" $Persist
+            Set-EnvVar -Name "ESET_VERIFY_SSL" -Value "false" -Persist:$Persist
         }
         else {
-            Set-EnvVar "ESET_VERIFY_SSL" "true" $Persist
+            Set-EnvVar -Name "ESET_VERIFY_SSL" -Value "true" -Persist:$Persist
         }
     }
 
