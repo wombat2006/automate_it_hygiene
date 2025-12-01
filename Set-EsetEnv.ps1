@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     ESET Manager用の環境変数を安全に設定するスクリプト
 
