@@ -218,8 +218,8 @@ else {
 
     # 接続オプション
     Write-Host "`n--- 接続オプション ---" -ForegroundColor Yellow
-    $useHttp = Read-Host "HTTPを使用するか? (y/N)"
-    if ($useHttp -eq 'y' -or $useHttp -eq 'Y') {
+    $inputUseHttp = Read-Host "HTTPを使用するか? (y/N)"
+    if ($inputUseHttp -eq 'y' -or $inputUseHttp -eq 'Y') {
         Set-EnvVar -Name "ESET_USE_HTTP" -Value "true" -Persist:$Persist.IsPresent
     }
     else {
